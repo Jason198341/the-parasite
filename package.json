@@ -1,0 +1,17 @@
+{
+  "name": "the-parasite",
+  "version": "0.1.0",
+  "description": "Your parasite. Hunts dark patterns, breaks autopilot, builds digital immunity.",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0",
+    "rimraf": "^6.0.0"
+  }
+}
