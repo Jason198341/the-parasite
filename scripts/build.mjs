@@ -23,7 +23,7 @@ async function build() {
   cpSync(resolve(root, 'manifest.json'), resolve(root, 'dist/manifest.json'));
   cpSync(resolve(root, 'src/popup/index.html'), resolve(root, 'dist/popup.html'));
   cpSync(resolve(root, 'src/popup/popup.css'), resolve(root, 'dist/popup.css'));
-  cpSync(resolve(root, 'src/styles/whisper.css'), resolve(root, 'dist/whisper.css'));
+  // whisper.css removed — dead code cleanup in v0.5
   cpSync(resolve(root, 'icons'), resolve(root, 'dist/icons'), { recursive: true });
 
   // Bundle content script

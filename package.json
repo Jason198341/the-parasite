@@ -1,6 +1,6 @@
 {
   "name": "the-parasite",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "Your parasite. Hunts dark patterns, breaks autopilot, builds digital immunity.",
   "private": true,
   "scripts": {

@@ -1,54 +1,25 @@
-// The Parasite v0.4 — Weekly Report + Evolution + Achievements Popup
+// The Parasite v0.5 — Popup (Weekly Report + Evolution + Achievements)
 
-interface DayData {
-  shorts: number;
-  seconds: number;
-}
+import type { DayData, EvolutionState, AchievementId } from '../shared/types';
+import { EVOLUTION, ACHIEVEMENTS } from '../shared/constants';
+import { safeGet, getDateKey } from '../shared/storage';
 
-const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
-
-const EVOLUTION = [
-  { level: 0, emoji: '🥚', name: '알', next: '1일 10개 미만으로 유충 진화' },
-  { level: 1, emoji: '🐛', name: '유충', next: '3일 연속 10개 미만으로 도마뱀 진화' },
-  { level: 2, emoji: '🦎', name: '도마뱀', next: '7일 연속 10개 미만으로 문어 진화' },
-  { level: 3, emoji: '🐙', name: '문어', next: '14일 연속 10개 미만으로 드래곤 진화' },
-  { level: 4, emoji: '🐉', name: '드래곤', next: '30일 연속 10개 미만으로 기생왕 진화' },
-  { level: 5, emoji: '👑', name: '기생왕', next: '최종 진화 달성!' },
-];
-
-const ACHIEVEMENTS = [
-  { id: 'first_blood', emoji: '🩸', title: '첫 감염' },
-  { id: 'algorithm_slave', emoji: '⛓️', title: '알고리즘의 노예' },
-  { id: 'zombie', emoji: '🧟', title: '새벽 좀비' },
-  { id: 'iron_will', emoji: '🪨', title: '철의 의지' },
-  { id: 'century', emoji: '💀', title: '센추리' },
-  { id: 'quick_escape', emoji: '🏃', title: '배반자' },
-  { id: 'evolved', emoji: '🦎', title: '진화 시작' },
-  { id: 'dragon', emoji: '🐉', title: '드래곤' },
-  { id: 'king', emoji: '👑', title: '기생왕' },
-];
-
-function getDateKey(date: Date): string {
-  return 'p_day_' + date.getFullYear() + '-' +
-    String(date.getMonth() + 1).padStart(2, '0') + '-' +
-    String(date.getDate()).padStart(2, '0');
-}
+const DAYS_KO = ['\uC77C', '\uC6D4', '\uD654', '\uC218', '\uBAA9', '\uAE08', '\uD1A0'];
 
 function formatMinutes(seconds: number): string {
   const m = Math.floor(seconds / 60);
-  if (m < 60) return m + '분';
+  if (m < 60) return m + '\uBD84';
   const h = Math.floor(m / 60);
   const rm = m % 60;
-  return h + '시간 ' + rm + '분';
+  return h + '\uC2DC\uAC04 ' + rm + '\uBD84';
 }
 
 function getWeekDates(offset: number = 0): Date[] {
   const dates: Date[] = [];
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0=Sun
+  const dayOfWeek = today.getDay();
   const monday = new Date(today);
   monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7) + (offset * 7));
-
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
@@ -60,62 +31,68 @@ function getWeekDates(offset: number = 0): Date[] {
 async function loadWeekData(offset: number): Promise<{ date: Date; data: DayData }[]> {
   const dates = getWeekDates(offset);
   const keys = dates.map(getDateKey);
-
-  return new Promise((resolve) => {
-    chrome.storage.local.get(keys, (result) => {
-      resolve(dates.map((date, i) => ({
-        date,
-        data: result[keys[i]] || { shorts: 0, seconds: 0 },
-      })));
-    });
-  });
+  try {
+    const result = await safeGet(keys);
+    return dates.map((date, i) => ({
+      date,
+      data: result[keys[i]] ?? { shorts: 0, seconds: 0 },
+    }));
+  } catch {
+    return dates.map((date) => ({ date, data: { shorts: 0, seconds: 0 } }));
+  }
 }
 
-async function loadEvolution(): Promise<{ level: number; streak: number }> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['p_evolution'], (result) => {
-      resolve(result.p_evolution || { level: 0, streak: 0 });
-    });
-  });
+async function loadEvolution(): Promise<EvolutionState> {
+  try {
+    const result = await safeGet(['p_evolution']);
+    return result.p_evolution ?? { level: 0, streak: 0 };
+  } catch {
+    return { level: 0, streak: 0 };
+  }
 }
 
-async function loadAchievements(): Promise<string[]> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['p_achievements'], (result) => {
-      resolve(result.p_achievements || []);
-    });
-  });
+async function loadAchievements(): Promise<AchievementId[]> {
+  try {
+    const result = await safeGet(['p_achievements']);
+    return result.p_achievements ?? [];
+  } catch {
+    return [];
+  }
 }
 
 async function render() {
-  const thisWeek = await loadWeekData(0);
-  const lastWeek = await loadWeekData(-1);
-  const evo = await loadEvolution();
-  const unlocked = new Set(await loadAchievements());
+  const [thisWeek, lastWeek, evo, unlockedArr] = await Promise.all([
+    loadWeekData(0),
+    loadWeekData(-1),
+    loadEvolution(),
+    loadAchievements(),
+  ]);
+  const unlocked = new Set(unlockedArr);
 
   const today = new Date();
   const todayKey = getDateKey(today);
   const todayEntry = thisWeek.find((d) => getDateKey(d.date) === todayKey);
-  const todayData = todayEntry?.data || { shorts: 0, seconds: 0 };
+  const todayData = todayEntry?.data ?? { shorts: 0, seconds: 0 };
 
-  // --- Evolution section ---
-  const evoInfo = EVOLUTION[evo.level] || EVOLUTION[0];
+  // --- Evolution ---
+  const evoInfo = EVOLUTION[evo.level] ?? EVOLUTION[0];
   const evoEmoji = document.getElementById('evoEmoji');
   const evoName = document.getElementById('evoName');
   const evoStreak = document.getElementById('evoStreak');
   const evoNext = document.getElementById('evoNext');
   if (evoEmoji) evoEmoji.textContent = evoInfo.emoji;
   if (evoName) evoName.textContent = 'Lv.' + evoInfo.level + ' ' + evoInfo.name;
-  if (evoStreak) evoStreak.textContent = evo.streak > 0 ? '🔥 ' + evo.streak + '일 연속' : '스트릭 없음';
+  if (evoStreak) evoStreak.textContent = evo.streak > 0
+    ? '\u{1F525} ' + evo.streak + '\uC77C \uC5F0\uC18D'
+    : '\uC2A4\uD2B8\uB9AD \uC5C6\uC74C';
   if (evoNext) evoNext.textContent = evoInfo.next;
 
-  // --- Today section ---
+  // --- Today ---
   const todayCountEl = document.getElementById('todayCount');
   const todayTimeEl = document.getElementById('todayTime');
   const todaySection = document.getElementById('today');
   if (todayCountEl) todayCountEl.textContent = String(todayData.shorts);
   if (todayTimeEl) todayTimeEl.textContent = formatMinutes(todayData.seconds);
-
   if (todaySection) {
     if (todayData.shorts >= 30) todaySection.className = 'today danger';
     else if (todayData.shorts >= 10) todaySection.className = 'today warn';
@@ -135,7 +112,6 @@ async function render() {
       let barClass = 'bar__fill';
       if (entry.data.shorts >= 30) barClass += ' danger';
       else if (entry.data.shorts >= 10) barClass += ' warn';
-
       return `
         <div class="bar ${isToday ? 'bar--today' : ''} ${isFuture ? 'bar--future' : ''}">
           <div class="bar__count">${isFuture ? '' : entry.data.shorts}</div>
@@ -143,8 +119,7 @@ async function render() {
             <div class="${barClass}" style="height: ${isFuture ? 0 : pct}%"></div>
           </div>
           <div class="bar__label">${dayLabel}</div>
-        </div>
-      `;
+        </div>`;
     }).join('');
   }
 
@@ -157,30 +132,29 @@ async function render() {
   const weekTimeEl = document.getElementById('weekTime');
   const weekDiffEl = document.getElementById('weekDiff');
 
-  if (weekTotalEl) weekTotalEl.textContent = thisWeekTotal + '개';
+  if (weekTotalEl) weekTotalEl.textContent = thisWeekTotal + '\uAC1C';
   if (weekTimeEl) weekTimeEl.textContent = formatMinutes(thisWeekSecs);
-
   if (weekDiffEl) {
     if (lastWeekTotal === 0) {
-      weekDiffEl.textContent = '지난주 데이터 없음';
+      weekDiffEl.textContent = '\uC9C0\uB09C\uC8FC \uB370\uC774\uD130 \uC5C6\uC74C';
       weekDiffEl.className = '';
     } else {
       const diff = thisWeekTotal - lastWeekTotal;
       const pct = Math.round((diff / lastWeekTotal) * 100);
       if (diff > 0) {
-        weekDiffEl.textContent = '+' + diff + '개 (' + pct + '%)';
+        weekDiffEl.textContent = '+' + diff + '\uAC1C (' + pct + '%)';
         weekDiffEl.className = 'diff-up';
       } else if (diff < 0) {
-        weekDiffEl.textContent = diff + '개 (' + pct + '%)';
+        weekDiffEl.textContent = diff + '\uAC1C (' + pct + '%)';
         weekDiffEl.className = 'diff-down';
       } else {
-        weekDiffEl.textContent = '동일';
+        weekDiffEl.textContent = '\uB3D9\uC77C';
         weekDiffEl.className = '';
       }
     }
   }
 
-  // --- Achievements ---
+  // --- Achievements (uses shared ACHIEVEMENTS — fixes #16) ---
   const gridEl = document.getElementById('achievementGrid');
   if (gridEl) {
     gridEl.innerHTML = ACHIEVEMENTS.map((ach) => {
@@ -189,10 +163,27 @@ async function render() {
         <div class="ach ${isUnlocked ? 'ach--unlocked' : 'ach--locked'}">
           <div class="ach__emoji">${ach.emoji}</div>
           <div class="ach__title">${isUnlocked ? ach.title : '???'}</div>
-        </div>
-      `;
+        </div>`;
     }).join('');
   }
+
+  // Hide loading indicator
+  const footer = document.getElementById('footer');
+  if (footer) footer.textContent = '\uC8FC\uAC04 \uB514\uC9C0\uD138 \uBA74\uC5ED \uB9AC\uD3EC\uD2B8';
 }
 
-document.addEventListener('DOMContentLoaded', render);
+document.addEventListener('DOMContentLoaded', () => {
+  // Timeout for hung promises (fixes #11)
+  const timeout = setTimeout(() => {
+    const footer = document.getElementById('footer');
+    if (footer) footer.textContent = '\uB370\uC774\uD130 \uB85C\uB4DC \uC2E4\uD328';
+  }, 5000);
+
+  render()
+    .catch((e) => {
+      console.error('\u{1F9A0} Popup error:', e);
+      const footer = document.getElementById('footer');
+      if (footer) footer.textContent = '\uB80C\uB354\uB9C1 \uC624\uB958';
+    })
+    .finally(() => clearTimeout(timeout));
+});
