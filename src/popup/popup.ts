@@ -1,4 +1,4 @@
-// The Parasite — Weekly Report Popup
+// The Parasite v0.4 — Weekly Report + Evolution + Achievements Popup
 
 interface DayData {
   shorts: number;
@@ -6,6 +6,27 @@ interface DayData {
 }
 
 const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
+
+const EVOLUTION = [
+  { level: 0, emoji: '🥚', name: '알', next: '1일 10개 미만으로 유충 진화' },
+  { level: 1, emoji: '🐛', name: '유충', next: '3일 연속 10개 미만으로 도마뱀 진화' },
+  { level: 2, emoji: '🦎', name: '도마뱀', next: '7일 연속 10개 미만으로 문어 진화' },
+  { level: 3, emoji: '🐙', name: '문어', next: '14일 연속 10개 미만으로 드래곤 진화' },
+  { level: 4, emoji: '🐉', name: '드래곤', next: '30일 연속 10개 미만으로 기생왕 진화' },
+  { level: 5, emoji: '👑', name: '기생왕', next: '최종 진화 달성!' },
+];
+
+const ACHIEVEMENTS = [
+  { id: 'first_blood', emoji: '🩸', title: '첫 감염' },
+  { id: 'algorithm_slave', emoji: '⛓️', title: '알고리즘의 노예' },
+  { id: 'zombie', emoji: '🧟', title: '새벽 좀비' },
+  { id: 'iron_will', emoji: '🪨', title: '철의 의지' },
+  { id: 'century', emoji: '💀', title: '센추리' },
+  { id: 'quick_escape', emoji: '🏃', title: '배반자' },
+  { id: 'evolved', emoji: '🦎', title: '진화 시작' },
+  { id: 'dragon', emoji: '🐉', title: '드래곤' },
+  { id: 'king', emoji: '👑', title: '기생왕' },
+];
 
 function getDateKey(date: Date): string {
   return 'p_day_' + date.getFullYear() + '-' +
@@ -50,30 +71,58 @@ async function loadWeekData(offset: number): Promise<{ date: Date; data: DayData
   });
 }
 
+async function loadEvolution(): Promise<{ level: number; streak: number }> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['p_evolution'], (result) => {
+      resolve(result.p_evolution || { level: 0, streak: 0 });
+    });
+  });
+}
+
+async function loadAchievements(): Promise<string[]> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['p_achievements'], (result) => {
+      resolve(result.p_achievements || []);
+    });
+  });
+}
+
 async function render() {
   const thisWeek = await loadWeekData(0);
   const lastWeek = await loadWeekData(-1);
+  const evo = await loadEvolution();
+  const unlocked = new Set(await loadAchievements());
 
   const today = new Date();
   const todayKey = getDateKey(today);
   const todayEntry = thisWeek.find((d) => getDateKey(d.date) === todayKey);
   const todayData = todayEntry?.data || { shorts: 0, seconds: 0 };
 
-  // Today section
+  // --- Evolution section ---
+  const evoInfo = EVOLUTION[evo.level] || EVOLUTION[0];
+  const evoEmoji = document.getElementById('evoEmoji');
+  const evoName = document.getElementById('evoName');
+  const evoStreak = document.getElementById('evoStreak');
+  const evoNext = document.getElementById('evoNext');
+  if (evoEmoji) evoEmoji.textContent = evoInfo.emoji;
+  if (evoName) evoName.textContent = 'Lv.' + evoInfo.level + ' ' + evoInfo.name;
+  if (evoStreak) evoStreak.textContent = evo.streak > 0 ? '🔥 ' + evo.streak + '일 연속' : '스트릭 없음';
+  if (evoNext) evoNext.textContent = evoInfo.next;
+
+  // --- Today section ---
   const todayCountEl = document.getElementById('todayCount');
   const todayTimeEl = document.getElementById('todayTime');
   const todaySection = document.getElementById('today');
   if (todayCountEl) todayCountEl.textContent = String(todayData.shorts);
   if (todayTimeEl) todayTimeEl.textContent = formatMinutes(todayData.seconds);
 
-  // Color today based on count
   if (todaySection) {
     if (todayData.shorts >= 30) todaySection.className = 'today danger';
     else if (todayData.shorts >= 10) todaySection.className = 'today warn';
     else todaySection.className = 'today';
   }
 
-  // Weekly chart
+  // --- Weekly chart ---
   const maxShorts = Math.max(...thisWeek.map((d) => d.data.shorts), 1);
   const chartEl = document.getElementById('weekChart');
   if (chartEl) {
@@ -99,7 +148,7 @@ async function render() {
     }).join('');
   }
 
-  // Summary
+  // --- Summary ---
   const thisWeekTotal = thisWeek.reduce((s, d) => s + d.data.shorts, 0);
   const thisWeekSecs = thisWeek.reduce((s, d) => s + d.data.seconds, 0);
   const lastWeekTotal = lastWeek.reduce((s, d) => s + d.data.shorts, 0);
@@ -119,16 +168,30 @@ async function render() {
       const diff = thisWeekTotal - lastWeekTotal;
       const pct = Math.round((diff / lastWeekTotal) * 100);
       if (diff > 0) {
-        weekDiffEl.textContent = '+' + diff + '개 (' + pct + '%) 📈';
+        weekDiffEl.textContent = '+' + diff + '개 (' + pct + '%)';
         weekDiffEl.className = 'diff-up';
       } else if (diff < 0) {
-        weekDiffEl.textContent = diff + '개 (' + pct + '%) 📉';
+        weekDiffEl.textContent = diff + '개 (' + pct + '%)';
         weekDiffEl.className = 'diff-down';
       } else {
         weekDiffEl.textContent = '동일';
         weekDiffEl.className = '';
       }
     }
+  }
+
+  // --- Achievements ---
+  const gridEl = document.getElementById('achievementGrid');
+  if (gridEl) {
+    gridEl.innerHTML = ACHIEVEMENTS.map((ach) => {
+      const isUnlocked = unlocked.has(ach.id);
+      return `
+        <div class="ach ${isUnlocked ? 'ach--unlocked' : 'ach--locked'}">
+          <div class="ach__emoji">${ach.emoji}</div>
+          <div class="ach__title">${isUnlocked ? ach.title : '???'}</div>
+        </div>
+      `;
+    }).join('');
   }
 }
 
