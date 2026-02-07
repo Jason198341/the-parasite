@@ -1,136 +1,144 @@
-/* Popup Styles — Dark, minimal, parasitic */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* The Parasite — Weekly Report Popup */
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  width: 320px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  width: 300px;
   background: #0a0a0a;
   color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-.popup {
-  padding: 16px;
-}
+.popup { padding: 16px; }
 
-.popup__header {
+/* Header */
+.header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
+.logo { font-size: 22px; }
+h1 { font-size: 15px; font-weight: 700; color: #22c55e; flex: 1; }
+.ver { font-size: 10px; color: #444; font-family: monospace; }
 
-.popup__icon {
-  font-size: 24px;
-}
-
-.popup__title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #22c55e;
-  flex: 1;
-}
-
-.popup__version {
-  font-size: 11px;
-  color: #555;
-  font-family: monospace;
-}
-
-/* Stats Grid */
-.popup__stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.stat {
-  background: #141414;
+/* Today */
+.today {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 12px 14px;
+  background: #111;
   border: 1px solid #222;
-  border-radius: 8px;
-  padding: 12px 8px;
-  text-align: center;
+  border-radius: 10px;
+  margin-bottom: 14px;
 }
-
-.stat__value {
-  display: block;
-  font-size: 24px;
-  font-weight: 700;
+.today__label { font-size: 12px; color: #666; }
+.today__count {
+  font-size: 36px;
+  font-weight: 800;
   color: #22c55e;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
+.today__unit { font-size: 13px; color: #888; margin-right: auto; }
+.today__time { font-size: 12px; color: #555; }
 
-.stat__label {
-  display: block;
-  font-size: 11px;
-  color: #666;
-  margin-top: 4px;
+.today.warn .today__count { color: #f59e0b; }
+.today.warn { border-color: rgba(245, 158, 11, 0.3); }
+.today.danger .today__count { color: #ef4444; }
+.today.danger { border-color: rgba(239, 68, 68, 0.3); }
+
+/* Weekly Chart */
+.week {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 4px;
+  height: 120px;
+  padding: 0 4px;
+  margin-bottom: 14px;
 }
 
-/* Site Breakdown */
-.popup__sites {
+.bar {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
+  height: 100%;
+}
+
+.bar__count {
+  font-size: 10px;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+  min-height: 14px;
+}
+
+.bar__track {
+  flex: 1;
+  width: 100%;
+  background: #151515;
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.bar__fill {
+  width: 100%;
+  background: #22c55e;
+  border-radius: 4px;
+  min-height: 2px;
+  transition: height 0.3s ease;
+}
+.bar__fill.warn { background: #f59e0b; }
+.bar__fill.danger { background: #ef4444; }
+
+.bar__label {
+  font-size: 11px;
+  color: #555;
+  font-weight: 600;
+}
+
+.bar--today .bar__label {
+  color: #22c55e;
+}
+.bar--today .bar__count {
+  color: #22c55e;
+  font-weight: 700;
+}
+
+.bar--future .bar__track {
+  background: #0d0d0d;
+}
+
+/* Summary */
+.summary {
+  background: #111;
+  border: 1px solid #1a1a1a;
+  border-radius: 10px;
+  padding: 10px 14px;
   margin-bottom: 12px;
 }
 
-.site-row {
-  position: relative;
+.summary__row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
-  border-radius: 6px;
-  overflow: hidden;
-  background: #141414;
-}
-
-.site-row__bar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  background: rgba(34, 197, 94, 0.1);
-  border-radius: 6px;
-  transition: width 0.3s ease;
-}
-
-.site-row__name {
-  position: relative;
+  align-items: center;
+  padding: 5px 0;
   font-size: 12px;
-  color: #ccc;
-  z-index: 1;
 }
+.summary__row span:first-child { color: #666; }
+.summary__row span:last-child { color: #ccc; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-.site-row__time {
-  position: relative;
-  font-size: 12px;
-  font-weight: 600;
-  color: #22c55e;
-  font-variant-numeric: tabular-nums;
-  z-index: 1;
-}
+.diff-up { color: #ef4444 !important; }
+.diff-down { color: #22c55e !important; }
 
 /* Footer */
-.popup__footer {
+.footer {
   text-align: center;
-  padding-top: 8px;
-  border-top: 1px solid #1a1a1a;
-}
-
-.popup__footer p {
   font-size: 10px;
-  color: #444;
-}
-
-.popup__empty {
-  font-size: 12px;
-  color: #555;
-  text-align: center;
-  padding: 16px 0;
+  color: #333;
+  padding-top: 4px;
 }

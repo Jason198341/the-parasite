@@ -178,7 +178,42 @@
     }
   }
 
+  // === DAILY DATA PERSISTENCE ===
+  function getTodayKey(): string {
+    const d = new Date();
+    return 'p_day_' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function saveDaily() {
+    try {
+      const key = getTodayKey();
+      const sec = Math.floor((Date.now() - startTime) / 1000);
+      chrome.storage.local.get([key], (result) => {
+        const prev = result[key] || { shorts: 0, seconds: 0 };
+        // We store the MAX of previous + current session
+        chrome.storage.local.set({
+          [key]: {
+            shorts: Math.max(prev.shorts, shortsCount),
+            seconds: Math.max(prev.seconds, sec),
+          },
+        });
+      });
+    } catch { /* extension context invalidated */ }
+  }
+
+  // Load today's previous data (from earlier sessions)
+  try {
+    chrome.storage.local.get([getTodayKey()], (result) => {
+      const prev = result[getTodayKey()];
+      if (prev && prev.shorts > 0) {
+        shortsCount = prev.shorts;
+        console.log('🦠 이전 세션 복원: ' + shortsCount + '개');
+      }
+    });
+  } catch { /* ignore */ }
+
   setInterval(tick, 500);
+  setInterval(saveDaily, 5000); // Save every 5 seconds
   tick();
 
   console.log('🦠 The Parasite ON — 10개마다 차단, 두 배씩 증가');

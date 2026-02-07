@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "The Parasite",
-  "version": "0.2.0",
-  "description": "Your parasite. Tracks YouTube Shorts consumption.",
+  "version": "0.3.0",
+  "description": "Your parasite. Tracks YouTube Shorts, locks screen on binge, weekly report.",
   "permissions": [
     "storage"
   ],

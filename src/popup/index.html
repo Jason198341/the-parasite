@@ -1,23 +1,48 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      width: 260px;
-      background: #0a0a0a;
-      color: #e0e0e0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      padding: 16px;
-    }
-    h1 { font-size: 16px; color: #22c55e; margin-bottom: 12px; }
-    p { font-size: 13px; color: #888; line-height: 1.6; }
-  </style>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <h1>🦠 The Parasite v0.2</h1>
-  <p>유튜브에서 쇼츠 카운터 활성화 중.</p>
-  <p>유튜브 열고 쇼츠 보면 왼쪽 상단에 카운터가 뜹니다.</p>
+<div class="popup">
+  <header class="header">
+    <span class="logo">🦠</span>
+    <h1>The Parasite</h1>
+    <span class="ver">v0.3</span>
+  </header>
+
+  <!-- Today highlight -->
+  <section class="today" id="today">
+    <div class="today__label">오늘</div>
+    <div class="today__count" id="todayCount">0</div>
+    <div class="today__unit">쇼츠</div>
+    <div class="today__time" id="todayTime">0분</div>
+  </section>
+
+  <!-- Weekly chart -->
+  <section class="week" id="weekChart">
+    <!-- Populated by JS -->
+  </section>
+
+  <!-- Weekly summary -->
+  <section class="summary" id="summary">
+    <div class="summary__row">
+      <span>이번 주 합계</span>
+      <span id="weekTotal">0개</span>
+    </div>
+    <div class="summary__row">
+      <span>이번 주 시간</span>
+      <span id="weekTime">0분</span>
+    </div>
+    <div class="summary__row">
+      <span>지난주 대비</span>
+      <span id="weekDiff">—</span>
+    </div>
+  </section>
+
+  <footer class="footer">주간 디지털 면역 리포트</footer>
+</div>
+<script src="popup.js"></script>
 </body>
 </html>
